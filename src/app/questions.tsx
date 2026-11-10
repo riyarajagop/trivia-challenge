@@ -1,36 +1,51 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Pressable, TextInput, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable, TextInput, TouchableOpacity } from 'react-native';
 import Slider from '@react-native-community/slider';
 import {useState, useEffect} from 'react';
 import { useRouter } from 'expo-router';
 
 interface Question {
     question: string;
-    options: string[];
-    answer: string;
+    incorrect_answers: string[];
+    correct_answer: string;
 }
 
 export default function Questions() {
-    const questions = [
-  {
-    question: "What is 2 + 2?",
-    options: ["3", "4", "5", "6"],
-    answer: "4"
-  },
-  {
-    question: "What is the capital of France?",
-    options: ["London", "Paris", "Rome", "Berlin"],
-    answer: "Paris"
-  }
+//     const questions = [
+//   {
+//     question: "What is 2 + 2?",
+//     options: ["3", "4", "5", "6"],
+//     answer: "4"
+//   },
+//   {
+//     question: "What is the capital of France?",
+//     options: ["London", "Paris", "Rome", "Berlin"],
+//     answer: "Paris"
+//   }
 
-  
-];
+    const [questions, setQuestions] = useState<Question[]>([])
+
+    async function getQuestions() {
+       //const [questions, setQuestions] = useState<Question[]>([]);
+    const responses = await fetch("https://opentdb.com/api.php?amount=10&encode=url3986")
+    const data = await responses.json();
+
+    setQuestions(data.results)
+   }
+
+    useEffect(() => {
+       getQuestions();
+}, [])
+
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const activeQuestion = questions[currentQuestion];
     const [correctAnswer, setCorrectAnswer] = useState(true);
+    const options = activeQuestion
+  ? [activeQuestion.correct_answer, ...activeQuestion.incorrect_answers]
+  : [];
 
     function isCorrect(selected: string) {
-        if (selected === activeQuestion.answer) {
+        if (selected === activeQuestion.correct_answer) {
             setCorrectAnswer(true)
         }
         else {
@@ -50,20 +65,23 @@ export default function Questions() {
         }
     }
 
-    async function getQuestions() {
-        //const [questions, setQuestions] = useState<Question[]>([]);
-       // const responses = await fetch("https://opentdb.com/api.php?amount=10")
-       // const data = await responses.json();
 
+    if (!activeQuestion) {
+        return (
+            <Text style={styles.question}>Loading questions...</Text>
+        )
     }
-
     return (
-        <View style={{backgroundColor: "white", height: "100%", width: "100%"}}>
-            <Text style={styles.question}>{activeQuestion.question}</Text>
-            {activeQuestion.options.map((option, index) => (
+        <ScrollView style={{backgroundColor: "white", height: "100%", width: "100%"}}>
+            <Text style={styles.question}>
+                {decodeURIComponent(activeQuestion.question)}
+            </Text>
+            {options.map((option, index) => (
                 <View>
                 <TouchableOpacity style={styles.optionButton} key={index} onPress={() => isCorrect(option)}>
-                    <Text style={styles.optionText}>{option}</Text>
+                    <Text style={styles.optionText}>
+                        {decodeURIComponent(option)}
+                    </Text>
                 </TouchableOpacity>
                 </View>
             ))}
@@ -80,7 +98,7 @@ export default function Questions() {
                 <Text style={styles.optionText}>Next</Text>
             </TouchableOpacity>
             </View>
-        </View>
+        </ScrollView>
     )
 }
 
